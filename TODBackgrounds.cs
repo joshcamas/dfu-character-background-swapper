@@ -10,8 +10,10 @@ using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game.UserInterfaceWindows;
 using DaggerfallWorkshop.Game.UserInterface;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.Weather;
 using DaggerfallWorkshop.Utility;
 using DaggerfallConnect.Utility;
+using Boo.Lang;
 
 namespace SpellcastStudios.TODBackgrounds
 {
@@ -30,13 +32,57 @@ namespace SpellcastStudios.TODBackgrounds
             public Panel backgroundPanel;
 
             public Texture2D lastSetBackground;
-            public bool lastWasNight;
+            public List<string> lastTags;
 
             public BackgroundScreen(UserInterfaceWindow window, PaperDoll paperDoll)
             {
                 this.window = window;
                 this.paperDoll = paperDoll;
                 this.backgroundPanel = (Panel)GetFieldValue("backgroundPanel", paperDoll);
+            }
+
+            private bool RequiresChange()
+            {
+                if (lastTags == null)
+                    return false;
+
+                var newTags = GetTags();
+
+                for(int i = 0; i < lastTags.Count; i++)
+                {
+                    if (newTags[i] != lastTags[i])
+                        return true;
+                }
+                return false;
+            }
+
+            private List<string> GetTags()
+            {
+                string weather = "";
+
+                var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
+
+                if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
+                    weather = "_RAIN";
+
+                else if (weatherType == WeatherType.Snow || weatherType == WeatherType.Snow_Normal)
+                    weather = "_SNOW";
+
+                else if (weatherType == WeatherType.Thunder)
+                    weather = "_STORM";
+
+                else if (weatherType == WeatherType.Fog)
+                    weather = "_FOG";
+
+                else if (weatherType == WeatherType.Overcast)
+                    weather = "_OVERCAST";
+
+                string time = "";
+
+                if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
+                    time = "_NIGHT";
+
+                return new List<string> { weather, time };
             }
 
             private void UpdateCurrentTexture()
@@ -59,9 +105,22 @@ namespace SpellcastStudios.TODBackgrounds
 
                 Texture2D texture = null;
 
-                //If night time, try finding night variant
-                if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
-                    texture = TryFindTexture(vanillaName, "_NIGHT");
+                var tags = GetTags();
+
+                for(int i = -1; i < tags.Count; i++)
+                {
+                    for (int k = -1; k < tags.Count; k++)
+                    {
+                        if (i == k && i != -1)
+                            continue;
+
+                        string tagi = i == -1 ? "" : tags[i];
+                        string tagk = k == -1 ? "" : tags[k];
+
+                        texture = TryFindTexture(vanillaName, tagi + tagk);
+                        Debug.Log(tagi + tagk);
+                    }
+                }
 
                 //Failed to find texture, so pick vanilla texture
                 if (texture == null)
@@ -76,7 +135,7 @@ namespace SpellcastStudios.TODBackgrounds
                 //Save last update
 
                 lastSetBackground = backgroundPanel.BackgroundTexture;
-                lastWasNight = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight;
+                lastTags = tags;
             }
 
             private Texture2D TryFindTexture(string vanillaName, string postfix)
@@ -140,9 +199,7 @@ namespace SpellcastStudios.TODBackgrounds
                 if (!this.window.Enabled)
                     return;
 
-                bool timeChange = lastWasNight != DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight;
-
-                if (backgroundPanel.BackgroundTexture != lastSetBackground || timeChange)
+                if (backgroundPanel.BackgroundTexture != lastSetBackground || RequiresChange())
                 {
                     UpdateCurrentTexture();
                 }
