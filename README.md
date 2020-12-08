@@ -8,9 +8,14 @@ If it is night, a "_NIGHT" texture will be used, if it exists.
 Example: ``SCBG00I0_NIGHT.IMG``
 
 ### Weather
-The weather tags are as follows: "_RAIN", "_SNOW", "_STORM", "_FOG", "_OVERCAST".
+The weather tags are as follows: "_RAIN", "_SNOW", "_STORM", "_FOG", "_OVERCAST". Note that snow is snowing, not snow covered landscape
 
 Example: ``SCBG00I0_RAIN.IMG``
+
+### Interior
+Interior will make the base image name be interior.IMG. So, to make an image appear in all interiors (dungeons, shops) you could just make a interior.IMG.png file!
+
+However, there are several other tags: "_CASTLE", "_DUNGEON", "_OPENSHOP".
 
 ### Combinations
 Weather and Time can be combo'd however you'd like!
