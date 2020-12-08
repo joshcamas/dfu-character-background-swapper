@@ -58,6 +58,20 @@ namespace SpellcastStudios.TODBackgrounds
 
             private List<string> GetTags()
             {
+                string custom = "";
+
+                if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
+                    custom = "_CASTLE";
+
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon)
+                    custom = "_DUNGEON";
+
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideOpenShop)
+                    custom = "_OPENSHOP";
+
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
+                    custom = "_BUILDING";
+
                 string weather = "";
 
                 var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
@@ -82,7 +96,7 @@ namespace SpellcastStudios.TODBackgrounds
                 if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
                     time = "_NIGHT";
 
-                return new List<string> { weather, time };
+                return new List<string> { custom, weather, time };
             }
 
             private void UpdateCurrentTexture()
@@ -103,11 +117,16 @@ namespace SpellcastStudios.TODBackgrounds
                     return;
                 }
 
+                string modVanillaName = vanillaName;
+
+                if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
+                    modVanillaName = "interior.IMG";
+
                 Texture2D texture = null;
 
                 var tags = GetTags();
 
-                for(int i = -1; i < tags.Count; i++)
+                for (int i = -1; i < tags.Count; i++)
                 {
                     for (int k = -1; k < tags.Count; k++)
                     {
@@ -117,16 +136,19 @@ namespace SpellcastStudios.TODBackgrounds
                         string tagi = i == -1 ? "" : tags[i];
                         string tagk = k == -1 ? "" : tags[k];
 
-                        texture = TryFindTexture(vanillaName, tagi + tagk);
-                        Debug.Log(tagi + tagk);
+                        //if (tagi == "" && tagk == "")
+                        //    continue;
+
+                        var nt = TryFindTexture(modVanillaName, tagi + tagk);
+
+                        if (nt != null)
+                            texture = nt;
                     }
                 }
 
                 //Failed to find texture, so pick vanilla texture
                 if (texture == null)
-                {
                     texture = ImageReader.GetTexture(vanillaName, 0, 0, false);
-                }
 
                 //Apply to background panel
                 backgroundPanel.BackgroundTexture = ImageReader.GetSubTexture(texture, backgroundSubRect, backgroundFullSize);
