@@ -36,9 +36,16 @@ namespace SpellcastStudios.TODBackgrounds
 
             public BackgroundScreen(UserInterfaceWindow window, PaperDoll paperDoll)
             {
+                UpdateWindow(window, paperDoll);
+            }
+
+            public void UpdateWindow(UserInterfaceWindow window, PaperDoll paperDoll)
+            {
                 this.window = window;
                 this.paperDoll = paperDoll;
-                this.backgroundPanel = (Panel)GetFieldValue("backgroundPanel", paperDoll);
+
+                if (paperDoll != null)
+                    this.backgroundPanel = (Panel)GetFieldValue("backgroundPanel", paperDoll);
             }
 
             private bool RequiresChange()
@@ -99,7 +106,7 @@ namespace SpellcastStudios.TODBackgrounds
                 return new List<string> { custom, weather, time };
             }
 
-            private void UpdateCurrentTexture()
+            public void UpdateCurrentTexture()
             {
                 string vanillaName = null;
 
@@ -122,22 +129,22 @@ namespace SpellcastStudios.TODBackgrounds
                 if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     modVanillaName = "interior.IMG";
 
-                Texture2D texture = null;
+                Texture2D texture = TryFindTexture(modVanillaName, "");
 
                 var tags = GetTags();
 
-                for (int i = -1; i < tags.Count; i++)
+                for (int i = 0; i < tags.Count; i++)
                 {
-                    for (int k = -1; k < tags.Count; k++)
+                    for (int k = 0; k < tags.Count; k++)
                     {
-                        if (i == k && i != -1)
+                        if (i == k)
                             continue;
 
-                        string tagi = i == -1 ? "" : tags[i];
-                        string tagk = k == -1 ? "" : tags[k];
+                        string tagi = tags[i];
+                        string tagk = tags[k];
 
-                        //if (tagi == "" && tagk == "")
-                        //    continue;
+                        if (tagi == "" && tagk == "")
+                           continue;
 
                         var nt = TryFindTexture(modVanillaName, tagi + tagk);
 
@@ -164,6 +171,8 @@ namespace SpellcastStudios.TODBackgrounds
             {
                 //Note removal of IMG. this is to get around a DFU bug
                 var newTexture = Path.GetFileNameWithoutExtension(vanillaName) + postfix + Path.GetExtension(vanillaName);
+
+                Debug.Log("Trying to find " + newTexture);
 
                 Texture2D output;
 
@@ -218,7 +227,7 @@ namespace SpellcastStudios.TODBackgrounds
 
             public void Update()
             {
-                if (!this.window.Enabled)
+                if (window == null || !window.Enabled)
                     return;
 
                 if (backgroundPanel.BackgroundTexture != lastSetBackground || RequiresChange())
@@ -233,6 +242,10 @@ namespace SpellcastStudios.TODBackgrounds
 
         private BackgroundScreen inventoryBackgroundScreen;
         private BackgroundScreen characterSheetBackgroundScreen;
+        private BackgroundScreen tradeBackgroundScreen;
+
+        private UserInterfaceManager uiManager;
+        private bool topWindowIsTradeWindow = false;
 
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
@@ -255,12 +268,32 @@ namespace SpellcastStudios.TODBackgrounds
 
             characterSheetBackgroundScreen = new BackgroundScreen(characterSheetWindow, characterSheetPaperDoll);
 
+            uiManager = (UserInterfaceManager)GetFieldValue("uiManager", DaggerfallUI.Instance);
+            uiManager.OnWindowChange += OnWindowChange;
+
+            //Create container for trade window
+            tradeBackgroundScreen = new BackgroundScreen(null, null);
+        }
+
+        //Detect when window changes and see if it's the trade menu
+        private void OnWindowChange(object sender, System.EventArgs e)
+        {
+            var inventoryWindow = uiManager.TopWindow as DaggerfallTradeWindow;
+
+            if(inventoryWindow != null && tradeBackgroundScreen.window != inventoryWindow)
+            {
+                var inventoryPaperDoll = (PaperDoll)GetFieldValue("paperDoll", inventoryWindow);
+
+                tradeBackgroundScreen.UpdateWindow(inventoryWindow, inventoryPaperDoll);
+                tradeBackgroundScreen.UpdateCurrentTexture();
+            }
         }
 
         private void LateUpdate()
         {
             inventoryBackgroundScreen.Update();
             characterSheetBackgroundScreen.Update();
+            tradeBackgroundScreen.Update();
         }
 
         private static object RunMethod(string method, object fromObject, params object[] parameters)
