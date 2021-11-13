@@ -55,7 +55,7 @@ namespace SpellcastStudios.TODBackgrounds
 
                 var newTags = GetTags();
 
-                for(int i = 0; i < lastTags.Count; i++)
+                for (int i = 0; i < lastTags.Count; i++)
                 {
                     if (newTags[i] != lastTags[i])
                         return true;
@@ -68,16 +68,24 @@ namespace SpellcastStudios.TODBackgrounds
                 string custom = "";
 
                 if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
+                    // return new List<string> { "_CASTLE", "", "" };
                     custom = "_CASTLE";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon)
+                    // return new List<string> { "_DUNGEON", "", "" };
                     custom = "_DUNGEON";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideOpenShop)
+                    // return new List<string> { "_OPENSHOP", "", "" };
                     custom = "_OPENSHOP";
 
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideTavern)
+                    custom = "_TAVERN";
+
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
+                    // return new List<string> { "_BUILDING", "", "" };
                     custom = "_BUILDING";
+
 
                 string weather = "";
 
@@ -115,7 +123,7 @@ namespace SpellcastStudios.TODBackgrounds
                 vanillaName = TryGetLycanthropyTextureName();
 
                 //Get vanilla image string
-                if(vanillaName == null)
+                if (vanillaName == null)
                     vanillaName = (string)RunMethod("GetPaperDollBackground", paperDoll, GameManager.Instance.PlayerEntity);
 
                 if (vanillaName == null)
@@ -144,7 +152,7 @@ namespace SpellcastStudios.TODBackgrounds
                         string tagk = tags[k];
 
                         if (tagi == "" && tagk == "")
-                           continue;
+                            continue;
 
                         var nt = TryFindTexture(modVanillaName, tagi + tagk);
 
@@ -152,6 +160,8 @@ namespace SpellcastStudios.TODBackgrounds
                             texture = nt;
                     }
                 }
+                if (texture == null)
+                    texture = TryFindTexture(modVanillaName, tags[0]);
 
                 //Failed to find texture, so pick vanilla texture
                 if (texture == null)
@@ -178,7 +188,6 @@ namespace SpellcastStudios.TODBackgrounds
 
                 if (TextureReplacement.TryImportImage(newTexture, false, out output))
                     return output;
-
                 return null;
             }
 
@@ -280,12 +289,16 @@ namespace SpellcastStudios.TODBackgrounds
         {
             var inventoryWindow = uiManager.TopWindow as DaggerfallTradeWindow;
 
-            if(inventoryWindow != null && tradeBackgroundScreen.window != inventoryWindow)
+            if (inventoryWindow != null && tradeBackgroundScreen.window != inventoryWindow)
             {
                 var inventoryPaperDoll = (PaperDoll)GetFieldValue("paperDoll", inventoryWindow);
 
                 tradeBackgroundScreen.UpdateWindow(inventoryWindow, inventoryPaperDoll);
                 tradeBackgroundScreen.UpdateCurrentTexture();
+            }
+            else
+            {
+                inventoryBackgroundScreen = new BackgroundScreen(inventoryBackgroundScreen.window, inventoryBackgroundScreen.paperDoll);
             }
         }
 
