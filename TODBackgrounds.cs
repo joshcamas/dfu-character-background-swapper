@@ -1,19 +1,25 @@
-using System.Reflection;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
-using UnityEngine;
+using DaggerfallConnect.Arena2;
+using DaggerfallConnect.Utility;
 
-using DaggerfallWorkshop.Utility.AssetInjection;
-using DaggerfallWorkshop.Game.Utility.ModSupport;
-using DaggerfallWorkshop.Game;
 using DaggerfallWorkshop;
-using DaggerfallWorkshop.Game.UserInterfaceWindows;
-using DaggerfallWorkshop.Game.UserInterface;
+using DaggerfallWorkshop.Game;
+using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.Serialization;
+using DaggerfallWorkshop.Game.UserInterface;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
+using DaggerfallWorkshop.Game.Utility.ModSupport;
+using DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings;
 using DaggerfallWorkshop.Game.Weather;
 using DaggerfallWorkshop.Utility;
-using DaggerfallConnect.Utility;
-using System.Collections.Generic;
+using DaggerfallWorkshop.Utility.AssetInjection;
+
+using UnityEngine;
 
 namespace SpellcastStudios.TODBackgrounds
 {
@@ -67,23 +73,22 @@ namespace SpellcastStudios.TODBackgrounds
             {
                 string custom = "";
 
-                if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
-                    // return new List<string> { "_CASTLE", "", "" };
+                if (PlayerIsInFactionBuilding(templeFactions))
+                    custom = "_TEMPLE";
+
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
                     custom = "_CASTLE";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon)
-                    // return new List<string> { "_DUNGEON", "", "" };
                     custom = "_DUNGEON";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideOpenShop)
-                    // return new List<string> { "_OPENSHOP", "", "" };
                     custom = "_OPENSHOP";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideTavern)
                     custom = "_TAVERN";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
-                    // return new List<string> { "_BUILDING", "", "" };
                     custom = "_BUILDING";
 
 
@@ -240,10 +245,18 @@ namespace SpellcastStudios.TODBackgrounds
                     return;
 
                 if (backgroundPanel.BackgroundTexture != lastSetBackground || RequiresChange())
-                {
                     UpdateCurrentTexture();
+            }
+            private static bool PlayerIsInFactionBuilding(List<FactionFile.FactionIDs> factionIds)//, DaggerfallInterior interior)
+            {
+                var interior = GameManager.Instance.PlayerEnterExit.Interior;
+
+                if (interior == null)
+                {
+                    return false;
                 }
 
+                return factionIds.Contains((FactionFile.FactionIDs)interior.BuildingData.FactionId);
             }
         }
 
@@ -255,6 +268,30 @@ namespace SpellcastStudios.TODBackgrounds
 
         private UserInterfaceManager uiManager;
         private bool topWindowIsTradeWindow = false;
+        public static List<FactionFile.FactionIDs> templeFactions;
+
+        public void Awake()
+        {
+            templeFactions = new List<FactionFile.FactionIDs>
+            {
+                FactionFile.FactionIDs.The_Akatosh_Chantry,
+                FactionFile.FactionIDs.Akatosh,
+                FactionFile.FactionIDs.The_Order_of_Arkay,
+                FactionFile.FactionIDs.Arkay,
+                FactionFile.FactionIDs.The_House_of_Dibella,
+                FactionFile.FactionIDs.Dibella,
+                FactionFile.FactionIDs.The_Schools_of_Julianos,
+                FactionFile.FactionIDs.Julianos,
+                FactionFile.FactionIDs.The_Temple_of_Kynareth,
+                FactionFile.FactionIDs.Kynareth,
+                FactionFile.FactionIDs.The_Benevolence_of_Mara,
+                FactionFile.FactionIDs.Mara,
+                FactionFile.FactionIDs.The_Temple_of_Stendarr,
+                FactionFile.FactionIDs.Stendarr,
+                FactionFile.FactionIDs.The_Resolution_of_Zen,
+                FactionFile.FactionIDs.Zen
+            };
+        }
 
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
