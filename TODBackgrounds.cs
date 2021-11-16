@@ -91,16 +91,12 @@ namespace SpellcastStudios.TODBackgrounds
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     custom = "_BUILDING";
 
-
                 string weather = "";
 
                 var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
 
                 if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
                     weather = "_RAIN";
-
-                else if (weatherType == WeatherType.Snow || weatherType == WeatherType.Snow_Normal)
-                    weather = "_SNOW";
 
                 else if (weatherType == WeatherType.Thunder)
                     weather = "_STORM";
@@ -138,9 +134,13 @@ namespace SpellcastStudios.TODBackgrounds
                 }
 
                 string modVanillaName = vanillaName;
+                PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
 
                 if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     modVanillaName = "interior.IMG";
+                else if ((DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.EveningStar || DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.MorningStar || DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.SunsDawn)
+                        && (playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.Woodlands || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.HauntedWoodlands || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.MountainWoods || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.Mountain))
+                    modVanillaName = "OUTSIDE_WINTER.IMG";
 
                 Texture2D texture = TryFindTexture(modVanillaName, "");
 
@@ -252,9 +252,7 @@ namespace SpellcastStudios.TODBackgrounds
                 var interior = GameManager.Instance.PlayerEnterExit.Interior;
 
                 if (interior == null)
-                {
                     return false;
-                }
 
                 return factionIds.Contains((FactionFile.FactionIDs)interior.BuildingData.FactionId);
             }
@@ -334,9 +332,7 @@ namespace SpellcastStudios.TODBackgrounds
                 tradeBackgroundScreen.UpdateCurrentTexture();
             }
             else
-            {
                 inventoryBackgroundScreen = new BackgroundScreen(inventoryBackgroundScreen.window, inventoryBackgroundScreen.paperDoll);
-            }
         }
 
         private void LateUpdate()
