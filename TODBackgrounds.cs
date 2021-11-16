@@ -136,10 +136,20 @@ namespace SpellcastStudios.TODBackgrounds
                 string modVanillaName = vanillaName;
                 PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
 
+                bool isPlayerInSnowyRegion = false;
+                switch (playerGPS.CurrentClimateIndex)
+                {
+                    case (int)MapsFile.Climates.Woodlands:
+                    case (int)MapsFile.Climates.HauntedWoodlands:
+                    case (int)MapsFile.Climates.MountainWoods:
+                    case (int)MapsFile.Climates.Mountain:
+                        isPlayerInSnowyRegion = true;
+                        break;
+                }
+
                 if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     modVanillaName = "interior.IMG";
-                else if ((DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.EveningStar || DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.MorningStar || DaggerfallUnity.Instance.WorldTime.Now.MonthValue == DaggerfallDateTime.Months.SunsDawn)
-                        && (playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.Woodlands || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.HauntedWoodlands || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.MountainWoods || playerGPS.CurrentClimateIndex == (int)MapsFile.Climates.Mountain))
+                else if ((DaggerfallUnity.Instance.WorldTime.Now.SeasonName == "Winter") && isPlayerInSnowyRegion)
                     modVanillaName = "OUTSIDE_WINTER.IMG";
 
                 Texture2D texture = TryFindTexture(modVanillaName, "");
@@ -265,7 +275,6 @@ namespace SpellcastStudios.TODBackgrounds
         private BackgroundScreen tradeBackgroundScreen;
 
         private UserInterfaceManager uiManager;
-        private bool topWindowIsTradeWindow = false;
         public static List<FactionFile.FactionIDs> templeFactions;
 
         public void Awake()
