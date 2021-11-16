@@ -73,6 +73,19 @@ namespace SpellcastStudios.TODBackgrounds
             {
                 string custom = "";
 
+                PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
+
+                bool isPlayerInSnowyRegion = false;
+                switch (playerGPS.CurrentClimateIndex)
+                {
+                    case (int)MapsFile.Climates.Woodlands:
+                    case (int)MapsFile.Climates.HauntedWoodlands:
+                    case (int)MapsFile.Climates.MountainWoods:
+                    case (int)MapsFile.Climates.Mountain:
+                        isPlayerInSnowyRegion = true;
+                        break;
+                }
+
                 if (PlayerIsInFactionBuilding(templeFactions))
                     custom = "_TEMPLE";
 
@@ -92,10 +105,12 @@ namespace SpellcastStudios.TODBackgrounds
                     custom = "_BUILDING";
 
                 string weather = "";
-
                 var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
 
-                if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
+                if ((DaggerfallUnity.Instance.WorldTime.Now.SeasonName == "Winter") && isPlayerInSnowyRegion)
+                    custom = "_WINTER";
+
+                else if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
                     weather = "_RAIN";
 
                 else if (weatherType == WeatherType.Thunder)
@@ -134,23 +149,9 @@ namespace SpellcastStudios.TODBackgrounds
                 }
 
                 string modVanillaName = vanillaName;
-                PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
-
-                bool isPlayerInSnowyRegion = false;
-                switch (playerGPS.CurrentClimateIndex)
-                {
-                    case (int)MapsFile.Climates.Woodlands:
-                    case (int)MapsFile.Climates.HauntedWoodlands:
-                    case (int)MapsFile.Climates.MountainWoods:
-                    case (int)MapsFile.Climates.Mountain:
-                        isPlayerInSnowyRegion = true;
-                        break;
-                }
 
                 if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     modVanillaName = "interior.IMG";
-                else if ((DaggerfallUnity.Instance.WorldTime.Now.SeasonName == "Winter") && isPlayerInSnowyRegion)
-                    modVanillaName = "OUTSIDE_WINTER.IMG";
 
                 Texture2D texture = TryFindTexture(modVanillaName, "");
 
@@ -175,6 +176,7 @@ namespace SpellcastStudios.TODBackgrounds
                             texture = nt;
                     }
                 }
+
                 if (texture == null)
                     texture = TryFindTexture(modVanillaName, tags[0]);
 
