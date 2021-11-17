@@ -108,7 +108,7 @@ namespace SpellcastStudios.TODBackgrounds
                 var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
 
                 if ((DaggerfallUnity.Instance.WorldTime.Now.SeasonName == "Winter") && isPlayerInSnowyRegion)
-                    custom = "_WINTER";
+                    weather = "_WINTER";
 
                 else if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
                     weather = "_RAIN";
@@ -166,6 +166,7 @@ namespace SpellcastStudios.TODBackgrounds
 
                         string tagi = tags[i];
                         string tagk = tags[k];
+                        Debug.Log(string.Format("{0} {1}", tagi, tagk));
 
                         if (tagi == "" && tagk == "")
                             continue;
