@@ -1,19 +1,25 @@
-using System.Reflection;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
-using UnityEngine;
+using DaggerfallConnect.Arena2;
+using DaggerfallConnect.Utility;
 
-using DaggerfallWorkshop.Utility.AssetInjection;
-using DaggerfallWorkshop.Game.Utility.ModSupport;
-using DaggerfallWorkshop.Game;
 using DaggerfallWorkshop;
-using DaggerfallWorkshop.Game.UserInterfaceWindows;
-using DaggerfallWorkshop.Game.UserInterface;
+using DaggerfallWorkshop.Game;
+using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.Serialization;
+using DaggerfallWorkshop.Game.UserInterface;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
+using DaggerfallWorkshop.Game.Utility.ModSupport;
+using DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings;
 using DaggerfallWorkshop.Game.Weather;
 using DaggerfallWorkshop.Utility;
-using DaggerfallConnect.Utility;
-using System.Collections.Generic;
+using DaggerfallWorkshop.Utility.AssetInjection;
+
+using UnityEngine;
 
 namespace SpellcastStudios.TODBackgrounds
 {
@@ -55,7 +61,7 @@ namespace SpellcastStudios.TODBackgrounds
 
                 var newTags = GetTags();
 
-                for(int i = 0; i < lastTags.Count; i++)
+                for (int i = 0; i < lastTags.Count; i++)
                 {
                     if (newTags[i] != lastTags[i])
                         return true;
@@ -67,7 +73,23 @@ namespace SpellcastStudios.TODBackgrounds
             {
                 string custom = "";
 
-                if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
+                PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
+
+                bool isPlayerInSnowyRegion = false;
+                switch (playerGPS.CurrentClimateIndex)
+                {
+                    case (int)MapsFile.Climates.Woodlands:
+                    case (int)MapsFile.Climates.HauntedWoodlands:
+                    case (int)MapsFile.Climates.MountainWoods:
+                    case (int)MapsFile.Climates.Mountain:
+                        isPlayerInSnowyRegion = true;
+                        break;
+                }
+
+                if (PlayerIsInFactionBuilding(templeFactions))
+                    custom = "_TEMPLE";
+
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
                     custom = "_CASTLE";
 
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon)
@@ -76,18 +98,20 @@ namespace SpellcastStudios.TODBackgrounds
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideOpenShop)
                     custom = "_OPENSHOP";
 
+                else if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideTavern)
+                    custom = "_TAVERN";
+
                 else if (GameManager.Instance.PlayerEnterExit.IsPlayerInside)
                     custom = "_BUILDING";
 
                 string weather = "";
-
                 var weatherType = GameManager.Instance.WeatherManager.PlayerWeather.WeatherType;
 
-                if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
-                    weather = "_RAIN";
+                if ((DaggerfallUnity.Instance.WorldTime.Now.SeasonName == "Winter") && isPlayerInSnowyRegion)
+                    weather = "_WINTER";
 
-                else if (weatherType == WeatherType.Snow || weatherType == WeatherType.Snow_Normal)
-                    weather = "_SNOW";
+                else if (weatherType == WeatherType.Rain || weatherType == WeatherType.Rain_Normal)
+                    weather = "_RAIN";
 
                 else if (weatherType == WeatherType.Thunder)
                     weather = "_STORM";
@@ -115,7 +139,7 @@ namespace SpellcastStudios.TODBackgrounds
                 vanillaName = TryGetLycanthropyTextureName();
 
                 //Get vanilla image string
-                if(vanillaName == null)
+                if (vanillaName == null)
                     vanillaName = (string)RunMethod("GetPaperDollBackground", paperDoll, GameManager.Instance.PlayerEntity);
 
                 if (vanillaName == null)
@@ -142,9 +166,10 @@ namespace SpellcastStudios.TODBackgrounds
 
                         string tagi = tags[i];
                         string tagk = tags[k];
+                        Debug.Log(string.Format("{0} {1}", tagi, tagk));
 
                         if (tagi == "" && tagk == "")
-                           continue;
+                            continue;
 
                         var nt = TryFindTexture(modVanillaName, tagi + tagk);
 
@@ -152,6 +177,9 @@ namespace SpellcastStudios.TODBackgrounds
                             texture = nt;
                     }
                 }
+
+                if (texture == null)
+                    texture = TryFindTexture(modVanillaName, tags[0]);
 
                 //Failed to find texture, so pick vanilla texture
                 if (texture == null)
@@ -178,7 +206,6 @@ namespace SpellcastStudios.TODBackgrounds
 
                 if (TextureReplacement.TryImportImage(newTexture, false, out output))
                     return output;
-
                 return null;
             }
 
@@ -231,10 +258,16 @@ namespace SpellcastStudios.TODBackgrounds
                     return;
 
                 if (backgroundPanel.BackgroundTexture != lastSetBackground || RequiresChange())
-                {
                     UpdateCurrentTexture();
-                }
+            }
+            private static bool PlayerIsInFactionBuilding(List<FactionFile.FactionIDs> factionIds)//, DaggerfallInterior interior)
+            {
+                var interior = GameManager.Instance.PlayerEnterExit.Interior;
 
+                if (interior == null)
+                    return false;
+
+                return factionIds.Contains((FactionFile.FactionIDs)interior.BuildingData.FactionId);
             }
         }
 
@@ -245,7 +278,30 @@ namespace SpellcastStudios.TODBackgrounds
         private BackgroundScreen tradeBackgroundScreen;
 
         private UserInterfaceManager uiManager;
-        private bool topWindowIsTradeWindow = false;
+        public static List<FactionFile.FactionIDs> templeFactions;
+
+        public void Awake()
+        {
+            templeFactions = new List<FactionFile.FactionIDs>
+            {
+                FactionFile.FactionIDs.The_Akatosh_Chantry,
+                FactionFile.FactionIDs.Akatosh,
+                FactionFile.FactionIDs.The_Order_of_Arkay,
+                FactionFile.FactionIDs.Arkay,
+                FactionFile.FactionIDs.The_House_of_Dibella,
+                FactionFile.FactionIDs.Dibella,
+                FactionFile.FactionIDs.The_Schools_of_Julianos,
+                FactionFile.FactionIDs.Julianos,
+                FactionFile.FactionIDs.The_Temple_of_Kynareth,
+                FactionFile.FactionIDs.Kynareth,
+                FactionFile.FactionIDs.The_Benevolence_of_Mara,
+                FactionFile.FactionIDs.Mara,
+                FactionFile.FactionIDs.The_Temple_of_Stendarr,
+                FactionFile.FactionIDs.Stendarr,
+                FactionFile.FactionIDs.The_Resolution_of_Zen,
+                FactionFile.FactionIDs.Zen
+            };
+        }
 
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
@@ -280,13 +336,15 @@ namespace SpellcastStudios.TODBackgrounds
         {
             var inventoryWindow = uiManager.TopWindow as DaggerfallTradeWindow;
 
-            if(inventoryWindow != null && tradeBackgroundScreen.window != inventoryWindow)
+            if (inventoryWindow != null && tradeBackgroundScreen.window != inventoryWindow)
             {
                 var inventoryPaperDoll = (PaperDoll)GetFieldValue("paperDoll", inventoryWindow);
 
                 tradeBackgroundScreen.UpdateWindow(inventoryWindow, inventoryPaperDoll);
                 tradeBackgroundScreen.UpdateCurrentTexture();
             }
+            else
+                inventoryBackgroundScreen = new BackgroundScreen(inventoryBackgroundScreen.window, inventoryBackgroundScreen.paperDoll);
         }
 
         private void LateUpdate()
